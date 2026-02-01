@@ -80,6 +80,18 @@ fabric.properties
 # Android studio 3.1+ serialized cache file
 .idea/caches/build_file_checksums.ser
 
+# RiderLink 플러그인 제외
+Plugins/Developer/RiderLink/
+
+# Rider 관련 파일 및 폴더
+.idea/
+*.sln
+*.suo
+*.user
+*.userosscache
+*.VC.db
+*.sln.iml
+
 ### UnrealEngine ###
 # Visual Studio 2015 user specific files
 .vs/
@@ -156,7 +168,8 @@ Plugins/*/Intermediate/*
 # Cache files for the editor to use
 DerivedDataCache/*
 
-#Content/Resources/*
+#Content Resources
+Content/Resources/*
 
 ### UnrealEngine Patch ###
 # Don't ignore icon and splash images for mobile app
