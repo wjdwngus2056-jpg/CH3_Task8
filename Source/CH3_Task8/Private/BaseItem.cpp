@@ -31,7 +31,6 @@ void ABaseItem::OnItemOverlap(
 {
 	if (OtherActor && OtherActor->ActorHasTag("Player"))
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Green, FString::Printf(TEXT("Overlap!!")));
 		ActivateItem(OtherActor);
 	}
 }
@@ -71,11 +70,16 @@ void ABaseItem::ActivateItem(TObjectPtr<AActor> Activator)
 	if (Particle)
 	{
 		FTimerHandle DestroyParticleTimerHandle;
+		TWeakObjectPtr<UParticleSystemComponent> WeakParticle = Particle;
+						
 		GetWorld()->GetTimerManager().SetTimer(
 			DestroyParticleTimerHandle,
-			[Particle]()
+			[WeakParticle]()
 			{
-				Particle->DestroyComponent();
+					if (WeakParticle.IsValid())
+					{
+							WeakParticle->DestroyComponent();
+					}
 			},
 			2.0f,
 			false

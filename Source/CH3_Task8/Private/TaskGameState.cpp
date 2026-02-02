@@ -12,9 +12,12 @@ ATaskGameState::ATaskGameState()
 	Score = 0;
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
-	LevelDuration = 30.0f;
+	CurrentWaveIndex = 0;
 	CurrentLevelIndex = 0;
+	MaxWave = 3;
 	MaxLevels = 3;
+	WaveDuration = 10.0f;
+	LevelDuration = WaveDuration * MaxWave;
 }
 
 void ATaskGameState::BeginPlay()
@@ -48,6 +51,44 @@ void ATaskGameState::AddScore(int32 Amount)
 	}
 }
 
+
+void ATaskGameState::StartWave()
+{
+	CurrentWaveIndex = FMath::Clamp(CurrentWaveIndex+1, 0, MaxWave);
+	UE_LOG(LogTemp, Warning, TEXT("CurrentWave : %d"), CurrentWaveIndex);
+	
+	if (CurrentWaveIndex >= MaxWave) return;
+	
+	TArray<AActor*> FoundVolumes;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
+
+	const int32 ItemToSpawn = 10;
+
+	for (int32 i = 0; i < ItemToSpawn; i++)
+	{
+		if (FoundVolumes.Num() > 0)
+		{
+			TObjectPtr<ASpawnVolume> SpawnVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
+			if (SpawnVolume)
+			{
+				TObjectPtr<AActor> SpawnedActor = SpawnVolume->SpawnRandomItem();
+				if (SpawnedActor && SpawnedActor->IsA(ACoinItem::StaticClass()))
+				{
+					SpawnedCoinCount++;
+				}
+			}
+		}
+	}
+	
+	GetWorldTimerManager().SetTimer(
+		WaveTimerHandle,
+		this,
+		&ATaskGameState::OnWaveTimeUp,
+		WaveDuration,
+		true
+	);
+}
+
 void ATaskGameState::StartLevel()
 {
 	if (TObjectPtr<APlayerController> PlayerController = GetWorld()->GetFirstPlayerController())
@@ -67,29 +108,7 @@ void ATaskGameState::StartLevel()
 		}
 	}
 	
-	SpawnedCoinCount = 0;
-	CollectedCoinCount = 0;
-	
-	TArray<AActor*> FoundVolumes;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
-
-	const int32 ItemToSpawn = 40;
-
-	for (int32 i = 0; i < ItemToSpawn; i++)
-	{
-		if (FoundVolumes.Num() > 0)
-		{
-			TObjectPtr<ASpawnVolume> SpawnVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
-			if (SpawnVolume)
-			{
-				TObjectPtr<AActor> SpawnedActor = SpawnVolume->SpawnRandomItem();
-				if (SpawnedActor && SpawnedActor->IsA(ACoinItem::StaticClass()))
-				{
-					SpawnedCoinCount++;
-				}
-			}
-		}
-	}
+	StartWave();
 	
 	GetWorldTimerManager().SetTimer(
 		LevelTimerHandle,
@@ -98,6 +117,11 @@ void ATaskGameState::StartLevel()
 		LevelDuration,
 		false
 	);
+}
+
+void ATaskGameState::OnWaveTimeUp()
+{
+	EndWave();
 }
 
 void ATaskGameState::OnLevelTimeUp()
@@ -113,10 +137,19 @@ void ATaskGameState::OnCoinCollected()
 		CollectedCoinCount,
 		SpawnedCoinCount);
 
-	if (SpawnedCoinCount > 0 && CollectedCoinCount >= SpawnedCoinCount)
+	if (SpawnedCoinCount > 0 && CollectedCoinCount >= SpawnedCoinCount && CurrentWaveIndex == MaxWave)
 	{
 		EndLevel();
 	}
+}
+
+void ATaskGameState::EndWave()
+{
+	GetWorldTimerManager().ClearTimer(WaveTimerHandle);	
+	
+	if (CurrentWaveIndex >= MaxWave) return;
+	
+	StartWave();
 }
 
 void ATaskGameState::EndLevel()
@@ -130,7 +163,7 @@ void ATaskGameState::EndLevel()
 		{
 			AddScore(Score);
 			CurrentLevelIndex++;
-			TaskGameInstance->CurrentLevelIndex = CurrentLevelIndex;;
+			TaskGameInstance->CurrentLevelIndex = CurrentLevelIndex;
 		}
 	}
 	
