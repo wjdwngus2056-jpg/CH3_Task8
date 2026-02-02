@@ -61,8 +61,7 @@ void ATaskGameState::StartWave()
 	
 	TArray<AActor*> FoundVolumes;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
-
-	WaveDuration = WaveDuration * CurrentWaveIndex;
+	
 	const int32 ItemToSpawn = 10 * (CurrentLevelIndex+1) * CurrentWaveIndex;
 
 	for (int32 i = 0; i < ItemToSpawn; i++)
