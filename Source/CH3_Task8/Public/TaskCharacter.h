@@ -21,9 +21,9 @@ public:
 	TObjectPtr<USpringArmComponent> SpringArmComp;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> CameraComp;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
-	TObjectPtr<UWidgetComponent> OverheadWidget;
 
+	UFUNCTION(BlueprintPure, Category = "Haelth")
+	float GetMaxHealth() const;
 	UFUNCTION(BlueprintPure, Category = "Health")
 	float GetHealth() const;
 	UFUNCTION(BlueprintCallable, Category = "Health")
@@ -57,7 +57,6 @@ protected:
 	void StopSprint(const FInputActionValue& value);
 	
 	void OnDeath();
-	void UpdateOverheadHP();
 
 private:
 	float NormalSpeed;

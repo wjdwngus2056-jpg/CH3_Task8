@@ -3,8 +3,10 @@
 #include "TaskPlayerController.h"
 #include "SpawnVolume.h"
 #include "CoinItem.h"
+#include "TaskCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
+#include "Components/ProgressBar.h"
 #include "Blueprint/UserWidget.h"
 
 ATaskGameState::ATaskGameState()
@@ -57,12 +59,11 @@ void ATaskGameState::StartWave()
 	CurrentWaveIndex = FMath::Clamp(CurrentWaveIndex+1, 0, MaxWave);
 	UE_LOG(LogTemp, Warning, TEXT("CurrentWave : %d"), CurrentWaveIndex);
 	
-	if (CurrentWaveIndex >= MaxWave) return;
-	
 	TArray<AActor*> FoundVolumes;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
 
-	const int32 ItemToSpawn = 10;
+	WaveDuration = WaveDuration * CurrentWaveIndex;
+	const int32 ItemToSpawn = 10 * (CurrentLevelIndex+1) * CurrentWaveIndex;
 
 	for (int32 i = 0; i < ItemToSpawn; i++)
 	{
@@ -145,9 +146,9 @@ void ATaskGameState::OnCoinCollected()
 
 void ATaskGameState::EndWave()
 {
-	GetWorldTimerManager().ClearTimer(WaveTimerHandle);	
-	
-	if (CurrentWaveIndex >= MaxWave) return;
+	if (CurrentWaveIndex > MaxWave) return;
+
+	GetWorldTimerManager().ClearTimer(WaveTimerHandle);
 	
 	StartWave();
 }
@@ -203,11 +204,42 @@ void ATaskGameState::UpdateHUD()
 		{
 			if (TObjectPtr<UUserWidget> HUDWidget = TaskPlayerController->GetHUDWidget())
 			{
-				if (TObjectPtr<UTextBlock> TimeText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Time"))))
+				if (TObjectPtr<UProgressBar> TimeBar = Cast<UProgressBar>(HUDWidget->GetWidgetFromName(TEXT("LevelTimer"))))
 				{
-					float RemainingTime = GetWorldTimerManager().GetTimerRemaining(LevelTimerHandle);
-					TimeText->SetText(FText::FromString(FString::Printf(TEXT("Time : %.1f"), RemainingTime)));
+					float LevelTime = GetWorldTimerManager().GetTimerRemaining(LevelTimerHandle);
+					TimeBar->SetPercent(LevelTime / LevelDuration);
 				}
+				
+				if (TObjectPtr<UProgressBar> WaveBar = Cast<UProgressBar>(HUDWidget->GetWidgetFromName(TEXT("WaveTimer"))))
+				{
+					float WaveTime = GetWorldTimerManager().GetTimerRemaining(WaveTimerHandle);
+					WaveBar->SetPercent(WaveTime / WaveDuration);
+				}
+				
+				if (TObjectPtr<UProgressBar> HPBar = Cast<UProgressBar>(HUDWidget->GetWidgetFromName(TEXT("HP"))))
+				{
+					if (TObjectPtr<AActor> Character = TaskPlayerController->GetCharacter())
+					{
+						TObjectPtr<ATaskCharacter> Player = Cast<ATaskCharacter>(Character);
+						if (Player)
+						{
+							HPBar->SetPercent(Player->GetHealth() / Player->GetMaxHealth());
+						}
+					}
+				}
+				
+				if (TObjectPtr<UTextBlock> HPText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("HPText"))))
+				{
+					if (TObjectPtr<AActor> Character = TaskPlayerController->GetCharacter())
+					{
+						TObjectPtr<ATaskCharacter> Player = Cast<ATaskCharacter>(Character);
+						if (Player)
+						{
+							HPText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), Player->GetHealth(), Player->GetMaxHealth())));
+						}
+					}
+				}
+				
 				
 				if (TObjectPtr<UTextBlock> ScoreText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Score"))))
 				{
@@ -221,9 +253,19 @@ void ATaskGameState::UpdateHUD()
 					}
 				}
 				
+				if (TObjectPtr<UTextBlock> CoinText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Coin"))))
+				{
+					CoinText->SetText(FText::FromString(FString::Printf(TEXT("Coin : %d / %d"), CollectedCoinCount, SpawnedCoinCount)));
+				}
+				
 				if (TObjectPtr<UTextBlock> LevelIndexText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Level"))))
 				{
 					LevelIndexText->SetText(FText::FromString(FString::Printf(TEXT("Level : %d"), CurrentLevelIndex + 1)));
+				}
+				
+				if (TObjectPtr<UTextBlock> WaveIndexText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Wave"))))
+				{
+					WaveIndexText->SetText(FText::FromString(FString::Printf(TEXT("Wave : %d"),CurrentWaveIndex)));
 				}
 			}
 		}

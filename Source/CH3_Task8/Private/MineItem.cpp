@@ -1,11 +1,14 @@
 ﻿#include "MineItem.h"
+
+#include "Components/ProgressBar.h"
 #include "Components/SphereComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 
 AMineItem::AMineItem()
 {
-    ExplosionDelay = 5.0f;
+    ExplosionDelay = 2.0f;
     ExplosionRadius = 300.0f;
     ExplosionDamage = 30.0f;
     ItemType = "Mine";
@@ -15,6 +18,23 @@ AMineItem::AMineItem()
     ExplosionCollision->InitSphereRadius(ExplosionRadius);
     ExplosionCollision->SetCollisionProfileName(TEXT("OverlapAllDynamic"));
     ExplosionCollision->SetupAttachment(Scene);
+    
+    OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+    OverheadWidget->SetupAttachment(Scene);
+    OverheadWidget->SetWidgetSpace(EWidgetSpace::Screen);
+    OverheadWidget->SetVisibility(false);
+}
+
+void AMineItem::BeginPlay()
+{
+    Super::BeginPlay();
+    GetWorld()->GetTimerManager().SetTimer(
+        UpdateUITimerHandle,
+        this,
+        &AMineItem::UpdateOverheadUI,
+        0.1f,
+        true
+    );
 }
 
 void AMineItem::ActivateItem(TObjectPtr<AActor> Activator)
@@ -23,6 +43,8 @@ void AMineItem::ActivateItem(TObjectPtr<AActor> Activator)
     
     Super::ActivateItem(Activator);
     
+    OverheadWidget->SetVisibility(true);
+    
     GetWorld()->GetTimerManager().SetTimer(
         ExplosionTimerHandle, 
         this, 
@@ -30,7 +52,6 @@ void AMineItem::ActivateItem(TObjectPtr<AActor> Activator)
         ExplosionDelay,
         false
     );
-    
     bHasExploded = true;
 }
 
@@ -95,4 +116,28 @@ void AMineItem::Explode()
             false
         );
     }
+}
+
+void AMineItem::UpdateOverheadUI()
+{
+    if (!OverheadWidget) return;
+	
+    TObjectPtr<UUserWidget> OverheadWidgetInstance = OverheadWidget->GetUserWidgetObject();
+    if (!OverheadWidgetInstance) return;
+	
+    if (TObjectPtr<UProgressBar> OverHeadUI = Cast<UProgressBar>(OverheadWidgetInstance->GetWidgetFromName(TEXT("ExplosionDelay"))))
+    {
+        float ExplosionTime = GetWorldTimerManager().GetTimerRemaining(ExplosionTimerHandle);
+        OverHeadUI->SetPercent( ExplosionTime / ExplosionDelay);
+    }
+}
+
+void AMineItem::ExplosionDelayMultiplier(float value)
+{
+    ExplosionDelay = ExplosionDelay * value;
+}
+
+void AMineItem::ExplosionDamageMultiplier(float value)
+{
+    ExplosionDamage = ExplosionDamage * value;
 }

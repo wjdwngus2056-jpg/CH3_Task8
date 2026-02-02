@@ -3,6 +3,7 @@
 #include "TaskGameInstance.h"
 #include "EnhancedInputSubsystems.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/KismetSystemLibrary.h" 
 #include "Kismet/GameplayStatics.h"
 #include "Components/TextBlock.h"
 
@@ -72,15 +73,27 @@ void ATaskPlayerController::ShowMainMenu(bool bIsRestart)
             SetInputMode(FInputModeUIOnly());
         }
         
-        if (TObjectPtr<UTextBlock> ButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("StartButtonText"))))
+        if (TObjectPtr<UTextBlock> StartButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("StartButtonText"))))
         {
             if (bIsRestart)
             {
-                ButtonText->SetText(FText::FromString(TEXT("Restart")));
+                StartButtonText->SetText(FText::FromString(TEXT("Restart")));
             }
             else
             {
-                ButtonText->SetText(FText::FromString(TEXT("Start")));
+                StartButtonText->SetText(FText::FromString(TEXT("Start")));
+            }
+        }
+        
+        if (TObjectPtr<UTextBlock> ExitButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("ExitButtonText"))))
+        {
+            if (bIsRestart)
+            {
+                ExitButtonText->SetText(FText::FromString(TEXT("Mainmenu")));
+            }
+            else
+            {
+                ExitButtonText->SetText(FText::FromString(TEXT("Exit")));
             }
         }
         
@@ -149,4 +162,19 @@ void ATaskPlayerController::StartGame()
     
     UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
     SetPause(false);
+}
+
+void ATaskPlayerController::ExitGame()
+{
+    if (TObjectPtr<UTaskGameInstance> TaskGameInstance = Cast<UTaskGameInstance>(UGameplayStatics::GetGameInstance(this)))
+    {
+        if (GetWorld()->GetName() == "MenuLevel")
+        {
+            UKismetSystemLibrary::QuitGame(GetWorld(), this, EQuitPreference::Quit, false);
+        }
+        else
+        {
+            UGameplayStatics::OpenLevel(GetWorld(), FName("MenuLevel"));
+        }
+    }
 }
