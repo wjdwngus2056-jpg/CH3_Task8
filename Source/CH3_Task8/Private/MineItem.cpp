@@ -131,13 +131,3 @@ void AMineItem::UpdateOverheadUI()
         OverHeadUI->SetPercent( ExplosionTime / ExplosionDelay);
     }
 }
-
-void AMineItem::ExplosionDelayMultiplier(float value)
-{
-    ExplosionDelay = ExplosionDelay * value;
-}
-
-void AMineItem::ExplosionDamageMultiplier(float value)
-{
-    ExplosionDamage = ExplosionDamage * value;
-}

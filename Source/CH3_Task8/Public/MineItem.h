@@ -14,10 +14,6 @@ class CH3_TASK8_API AMineItem : public ABaseItem
 public:
 	AMineItem();
 	
-	UFUNCTION(BlueprintCallable, Category = "Mine")
-	void ExplosionDelayMultiplier(float Value);
-	UFUNCTION(BlueprintCallable, Category = "Mine")
-	void ExplosionDamageMultiplier(float Value);
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TObjectPtr<UWidgetComponent> OverheadWidget;
 
